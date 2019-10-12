@@ -30,6 +30,48 @@ public class PdfViewer {
     private JButton btnPreviousPage;
     private JButton btnFirstPage;
 
+    private JPanel panelControls;
+    private Box horizontalBoxControls;
+    private Box horizontalBoxView;
+    private ImagePanel imagePanel;
+
+    public PdfViewer(File document) throws Exception {
+        initialize(document);
+    }
+
+    private void initialize(File file) throws Exception {
+        PDDocument doc = PDDocument.load(file);
+        filePath = file.getPath();
+        initScreen(doc);
+        initFrame(file);
+        initPanelControls();
+        initButtonFirstPage();
+        initButtonPreviousPage();
+        initButtonNextPage();
+        initPageNumber();
+        initButtonLastPage();
+        initSelectedPage();
+        initFinalView();
+        addMouseListener();
+    }
+
+    private void selectPage(int pageIndex) {
+        BufferedImage renderImage = null;
+
+        try {
+            renderImage = renderer.renderImage(pageIndex, 1);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        selectPageConfiguration(renderImage, pageIndex);
+        selectPageButtonsEffect(pageIndex);
+        panelSelectedPage.revalidate();
+        panelSelectedPage.repaint();
+        pdfWidth = imagePanel.getPreferredSize().width;
+        pdfHeight = imagePanel.getPreferredSize().height;
+    }
+
     private void enableDisableButtons(int actionIndex) {
         switch (actionIndex) {
             case 0:
@@ -52,30 +94,19 @@ public class PdfViewer {
         }
     }
 
-    public PdfViewer(File document) throws Exception {
-        initialize(document);
-    }
-
-    private void selectPage(int pageIndex) {
-        BufferedImage renderImage = null;
-
-        try {
-            renderImage = renderer.renderImage(pageIndex, 1);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+    private void selectPageConfiguration (BufferedImage renderImage, int pageIndex) {
         panelSelectedPage.removeAll(); // Remove children
-
-        ImagePanel imagePanel = new ImagePanel(renderImage, width, height);
+        imagePanel = new ImagePanel(renderImage, width, height);
         imagePanel.setBorder(new EmptyBorder(0, 0, 0, 0));
         imagePanel.setLayout(new CardLayout(0, 0));
         imagePanel.setPreferredSize(new Dimension(width, height));
         panelSelectedPage.add(imagePanel, BorderLayout.CENTER);
         currentPageIndex = pageIndex;
-
         String pageText = String.format("Page: %d / %d", pageIndex + 1, numberOfPages);
         txtPageNumber.setText(pageText);
+    }
 
+    private void selectPageButtonsEffect (int pageIndex) {
         if (pageIndex == 0) {
             enableDisableButtons(0);
         } else if (pageIndex == (numberOfPages - 1)) {
@@ -83,57 +114,21 @@ public class PdfViewer {
         } else {
             enableDisableButtons(-1);
         }
-
-        panelSelectedPage.revalidate();
-        panelSelectedPage.repaint();
-
-        //System.out.println(imagePanel.getPreferredSize().width + " : " + imagePanel.getPreferredSize().height);
-        pdfWidth = imagePanel.getPreferredSize().width;
-        pdfHeight = imagePanel.getPreferredSize().height;
     }
 
-    private void initialize(File file) throws Exception {
-
-        PDDocument doc = PDDocument.load(file);
-
-        filePath = file.getPath();
-
+    private void initScreen (PDDocument doc) {
+        numberOfPages = doc.getNumberOfPages();
+        renderer = new MyPDFRenderer(doc);
         // Getting/calculating screen dimensions...
         float realWidth = new Float(doc.getPage(0).getMediaBox().getWidth());
         float realHeight = new Float(doc.getPage(0).getMediaBox().getHeight());
-
-        // System.out.println(realWidth + ", " + realHeight);
-
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
         Double ratio = 0.8;
-
         height = (int) (screenSize.getHeight() * ratio);
         width = (int) ((height * realWidth) / realHeight);
+    }
 
-        numberOfPages = doc.getNumberOfPages();
-
-        renderer = new MyPDFRenderer(doc);
-
-        System.out.println("Number of pages = " + numberOfPages);
-
-        frame = new JFrame();
-        frame.setResizable(false);
-        frame.setTitle(file.getName());
-        frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-
-        JPanel panelControls = new JPanel();
-        frame.getContentPane().add(panelControls, BorderLayout.SOUTH);
-        panelControls.setLayout(new BorderLayout(0, 0));
-
-        Component verticalStrutTop = Box.createVerticalStrut(10);
-        panelControls.add(verticalStrutTop, BorderLayout.NORTH);
-
-        Box horizontalBoxControls = Box.createHorizontalBox();
-        panelControls.add(horizontalBoxControls);
-
-        Component horizontalStrutLeft = Box.createHorizontalStrut(10);
-        horizontalBoxControls.add(horizontalStrutLeft);
-
+    private void initButtonFirstPage () {
         btnFirstPage = new JButton("First Page");
         btnFirstPage.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent event) {
@@ -141,10 +136,11 @@ public class PdfViewer {
             }
         });
         horizontalBoxControls.add(btnFirstPage);
-
         Component horizontalStrutLeft_1 = Box.createHorizontalStrut(10);
         horizontalBoxControls.add(horizontalStrutLeft_1);
+    }
 
+    private void initButtonPreviousPage () {
         btnPreviousPage = new JButton("Previous Page");
         btnPreviousPage.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
@@ -154,20 +150,11 @@ public class PdfViewer {
             }
         });
         horizontalBoxControls.add(btnPreviousPage);
-
         Component horizontalStrutLeft_2 = Box.createHorizontalStrut(10);
         horizontalBoxControls.add(horizontalStrutLeft_2);
+    }
 
-        txtPageNumber = new JTextField();
-        horizontalBoxControls.add(txtPageNumber);
-        txtPageNumber.setHorizontalAlignment(SwingConstants.CENTER);
-        txtPageNumber.setEditable(false);
-        txtPageNumber.setPreferredSize(new Dimension(50, txtPageNumber.getPreferredSize().width));
-        txtPageNumber.setColumns(10);
-
-        Component horizontalStrutRight_2 = Box.createHorizontalStrut(10);
-        horizontalBoxControls.add(horizontalStrutRight_2);
-
+    private void initButtonNextPage () {
         btnNextPage = new JButton("Next Page");
         btnNextPage.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
@@ -177,10 +164,9 @@ public class PdfViewer {
             }
         });
         horizontalBoxControls.add(btnNextPage);
+    }
 
-        Component horizontalStrutRight_1 = Box.createHorizontalStrut(10);
-        horizontalBoxControls.add(horizontalStrutRight_1);
-
+    private void initButtonLastPage () {
         btnLastPage = new JButton("Last Page");
         btnLastPage.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
@@ -188,42 +174,88 @@ public class PdfViewer {
             }
         });
         horizontalBoxControls.add(btnLastPage);
+    }
 
-        Component horizontalStrutRight = Box.createHorizontalStrut(10);
-        horizontalBoxControls.add(horizontalStrutRight);
+    private void initPageNumber () {
+        txtPageNumber = new JTextField();
+        horizontalBoxControls.add(txtPageNumber);
+        txtPageNumber.setHorizontalAlignment(SwingConstants.CENTER);
+        txtPageNumber.setEditable(false);
+        txtPageNumber.setPreferredSize(new Dimension(50, txtPageNumber.getPreferredSize().width));
+        txtPageNumber.setColumns(10);
+    }
 
-        Component verticalStrutBottom = Box.createVerticalStrut(10);
-        panelControls.add(verticalStrutBottom, BorderLayout.SOUTH);
+    private void initPanelControls () {
+        panelControls = new JPanel();
+        frame.getContentPane().add(panelControls, BorderLayout.SOUTH);
+        panelControls.setLayout(new BorderLayout(0, 0));
+        initHorizontalConfiguration();
+        initVerticalConfiguration();
+    }
 
-        Box verticalBoxView = Box.createVerticalBox();
-        frame.getContentPane().add(verticalBoxView, BorderLayout.WEST);
+    private void initHorizontalConfiguration () {
+        horizontalBoxControls = Box.createHorizontalBox();
+        panelControls.add(horizontalBoxControls);
+        horizontalBoxView = Box.createHorizontalBox();
+        initHorizontalLeftConfiguration();
+        initHorizontalRightConfiguration();
+    }
 
-        Component verticalStrutView = Box.createVerticalStrut(10);
-        verticalBoxView.add(verticalStrutView);
-
-        Box horizontalBoxView = Box.createHorizontalBox();
-        verticalBoxView.add(horizontalBoxView);
-
+    private void initHorizontalLeftConfiguration () {
+        Component horizontalStrutLeft = Box.createHorizontalStrut(10);
+        horizontalBoxControls.add(horizontalStrutLeft);
         Component horizontalStrutViewLeft = Box.createHorizontalStrut(10);
         horizontalBoxView.add(horizontalStrutViewLeft);
+    }
 
+    private void initHorizontalRightConfiguration () {
+        Component horizontalStrutRight = Box.createHorizontalStrut(10);
+        horizontalBoxControls.add(horizontalStrutRight);
+        Component horizontalStrutRight_2 = Box.createHorizontalStrut(10);
+        horizontalBoxControls.add(horizontalStrutRight_2);
+        Component horizontalStrutRight_1 = Box.createHorizontalStrut(10);
+        horizontalBoxControls.add(horizontalStrutRight_1);
+        Component horizontalStrutViewRight = Box.createHorizontalStrut(10);
+        horizontalBoxView.add(horizontalStrutViewRight);
+    }
+
+    private void initVerticalConfiguration () {
+        Component verticalStrutTop = Box.createVerticalStrut(10);
+        panelControls.add(verticalStrutTop, BorderLayout.NORTH);
+        Component verticalStrutBottom = Box.createVerticalStrut(10);
+        panelControls.add(verticalStrutBottom, BorderLayout.SOUTH);
+        Box verticalBoxView = Box.createVerticalBox();
+        frame.getContentPane().add(verticalBoxView, BorderLayout.WEST);
+        Component verticalStrutView = Box.createVerticalStrut(10);
+        verticalBoxView.add(verticalStrutView);
+        verticalBoxView.add(horizontalBoxView);
+    }
+
+    private void initSelectedPage () {
         panelSelectedPage = new JPanel();
         panelSelectedPage.setBackground(Color.LIGHT_GRAY);
         horizontalBoxView.add(panelSelectedPage);
         panelSelectedPage.setPreferredSize(new Dimension(width, height));
         panelSelectedPage.setBorder(new EmptyBorder(0, 0, 0, 0));
         panelSelectedPage.setLayout(new BorderLayout(0, 0));
+    }
 
-        Component horizontalStrutViewRight = Box.createHorizontalStrut(10);
-        horizontalBoxView.add(horizontalStrutViewRight);
+    private void initFrame (File file) {
+        frame = new JFrame();
+        frame.setResizable(false);
+        frame.setTitle(file.getName());
+        frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+    }
 
+    private void initFinalView () {
         selectPage(0);
-
         frame.pack();
         frame.setLocationRelativeTo(null);
         frame.setVisible(true);
         frame.repaint();
+    }
 
+    private void addMouseListener () {
         panelSelectedPage.addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed (MouseEvent e) {
@@ -238,6 +270,5 @@ public class PdfViewer {
                 }
             }
         });
-
     }
 }

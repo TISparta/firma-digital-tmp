@@ -17,41 +17,7 @@ class Firma {
 
     static String pathBase = "/home/tisparta/Downloads/Information-Systems/Firmalo/";
 
-    public static void main(String[] args) {
-        try {
-            // Config
-            String pathCertificate1 = pathBase + "keyStore.p12";
-            String pathCertificate2 = pathBase + "keyStore2.p12";
-            String output1 = "output1.pdf";
-            String output2 = "output2.pdf";
-            sign(pathBase + "skiplists.pdf", pathCertificate1, output1, 38, 648);
-            sign(pathBase + "skiplists.pdf", pathCertificate2, output2, 38, 648);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-/*
-    static void sign(String pathCertificate, String output)
-            throws GeneralSecurityException, IOException, java.io.IOException {
-        String privateKey = "1234";
-        String pathIn = pathBase + "skiplists.pdf";
-        String pathOutput = pathBase + output;
-
-        BouncyCastleProvider provider = new BouncyCastleProvider();
-        Security.addProvider(provider);
-
-        KeyStore ks = KeyStore.getInstance("pkcs12");
-        ks.load(new FileInputStream(pathCertificate), privateKey.toCharArray());
-        String alias = (String) ks.aliases().nextElement();
-        PrivateKey key = (PrivateKey) ks.getKey(alias, privateKey.toCharArray());
-        Certificate[] chain = ks.getCertificateChain(alias);
-
-        sign(pathIn, pathOutput, chain, key, DigestAlgorithms.SHA256, provider.getName(), PdfSigner.CryptoStandard.CMS, "Test 1", "UTEC-CSLab");
-    }
-*/
-
-    static void sign(String pathIn, String pathCertificate, String output, float x, float y)
+    public static void sign(String pathIn, String pathCertificate, String output, float x, float y)
             throws GeneralSecurityException, IOException, java.io.IOException {
         String privateKey = "1234";
         String pathOutput = pathBase + output;
@@ -68,11 +34,11 @@ class Firma {
         sign(pathIn, pathOutput, chain, key, DigestAlgorithms.SHA256, provider.getName(), PdfSigner.CryptoStandard.CMS, "Test 1", "UTEC-CSLab", x, y);
     }
 
-    static void sign(String src, String dest,
-                     Certificate[] chain,
-                     PrivateKey pk, String digestAlgorithm, String provider,
-                     PdfSigner.CryptoStandard subfilter,
-                     String reason, String location, float x, float y)
+    private static void sign(String src, String dest,
+                             Certificate[] chain,
+                             PrivateKey pk, String digestAlgorithm, String provider,
+                             PdfSigner.CryptoStandard subfilter,
+                             String reason, String location, float x, float y)
             throws GeneralSecurityException, IOException, java.io.IOException {
         // Creating the reader and the signer
         PdfReader reader = new PdfReader(src);
